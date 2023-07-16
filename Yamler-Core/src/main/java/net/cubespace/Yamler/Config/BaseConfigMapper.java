@@ -1,6 +1,7 @@
 package net.cubespace.Yamler.Config;
 
 import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.CustomClassLoaderConstructor;
 import org.yaml.snakeyaml.error.YAMLException;
@@ -12,6 +13,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,7 +27,7 @@ public class BaseConfigMapper extends BaseConfig {
 	private transient Yaml yaml;
 	protected transient ConfigSection root;
 	private transient Map<String, ArrayList<String>> comments = new LinkedHashMap<>();
-	private transient Representer yamlRepresenter = new Representer();
+	private transient Representer yamlRepresenter = new Representer(new DumperOptions());
 
 	protected BaseConfigMapper() {
 		DumperOptions yamlOptions = new DumperOptions();
@@ -33,7 +36,7 @@ public class BaseConfigMapper extends BaseConfig {
 
 		yamlRepresenter.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
 
-		yaml = new Yaml(new CustomClassLoaderConstructor(BaseConfigMapper.class.getClassLoader()), yamlRepresenter, yamlOptions);
+		yaml = new Yaml(new CustomClassLoaderConstructor(BaseConfigMapper.class.getClassLoader(), new LoaderOptions()), yamlRepresenter, yamlOptions);
 
         /*
         Configure the settings for serializing via the annotations present.
@@ -44,7 +47,7 @@ public class BaseConfigMapper extends BaseConfig {
 	protected void loadFromYaml() throws InvalidConfigurationException {
 		root = new ConfigSection();
 
-		try (InputStreamReader fileReader = new InputStreamReader(new FileInputStream(CONFIG_FILE), Charset.forName("UTF-8"))) {
+		try (InputStreamReader fileReader = new InputStreamReader(Files.newInputStream(CONFIG_FILE.toPath()), StandardCharsets.UTF_8)) {
 			Object object = yaml.load(fileReader);
 
 			if (object != null) {
@@ -73,7 +76,7 @@ public class BaseConfigMapper extends BaseConfig {
 	}
 
 	protected void saveToYaml() throws InvalidConfigurationException {
-		try (OutputStreamWriter fileWriter = new OutputStreamWriter(new FileOutputStream(CONFIG_FILE), Charset.forName("UTF-8"))) {
+		try (OutputStreamWriter fileWriter = new OutputStreamWriter(Files.newOutputStream(CONFIG_FILE.toPath()), StandardCharsets.UTF_8)) {
 			if (CONFIG_HEADER != null) {
 				for (String line : CONFIG_HEADER) {
 					fileWriter.write("# " + line + "\n");
